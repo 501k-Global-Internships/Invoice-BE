@@ -2,6 +2,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import scheduleInvoice from './utils/invoice-overdue-schedule';
+import dbConnection from './utils/database';
 import routes from './routes/routes';
 
 const dotenv = require('dotenv');
@@ -32,5 +33,6 @@ app.get('/', (req, res) => {
 routes(app);
 
 scheduleInvoice();
+dbConnection();
 
 app.listen(port, () => console.log(`index app listening on http://localhost:${port}`));
