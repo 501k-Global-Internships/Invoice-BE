@@ -1,0 +1,41 @@
+{
+  "name": "invoice-be",
+  "version": "1.0.0",
+  "description": "The backend service for invoice application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon -r esm index.js",
+    "migrate": "npx sequelize-cli db:migrate",
+    "undo-migration": "npx sequelize-cli db:migrate:undo",
+    "undo-specific": "npx sequelize-cli db:migrate:undo --name"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/501k-Global-Internships/Invoice-BE.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/501k-Global-Internships/Invoice-BE/issues"
+  },
+  "homepage": "https://github.com/501k-Global-Internships/Invoice-BE#readme",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "esm": "^3.2.25",
+    "express": "^4.19.2",
+    "express-validator": "^7.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^3.0.3",
+    "password-hash": "^1.2.2",
+    "pdfkit": "^0.15.0",
+    "pg": "^8.11.5",
+    "sequelize": "^6.37.2"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^6.6.2"
+  }
+}
