@@ -56,7 +56,7 @@ export const signInConstraints = [
     .withMessage('email field must contain a valid email address')
     .trim(),
 
-    body('password')
+  body('password')
     .exists()
     .withMessage('password is required')
     .bail()
@@ -65,4 +65,28 @@ export const signInConstraints = [
     .bail()
     .isLength({ min: 8 })
     .withMessage('password must contain at least 8 characters'),
+];
+
+export const authSignInConstraints = [
+  body('email')
+    .exists()
+    .withMessage('email is required')
+    .bail()
+    .isLength({ min: 1 })
+    .withMessage('email is required')
+    .bail()
+    .isEmail()
+    .withMessage('email field must contain a valid email address')
+    .trim(),
+
+  body('name')
+    .exists()
+    .withMessage('firstName field is required')
+    .bail()
+    .isLength({ min: 1 })
+    .withMessage('firstName field is required')
+    .bail()
+    .isString()
+    .withMessage('the name must be a string')
+    .trim(),
 ];

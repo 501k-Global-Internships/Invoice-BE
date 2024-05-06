@@ -43,7 +43,7 @@ class UserController {
       if (passwordHash.verify(req.body.password, usr.passwordHash)) {
         return res.status(201).send({
           id: usr.id,
-          name: usr.firstName,
+          name: usr.name,
           email: usr.email,
           message: 'Sign in successful',
           token: signJsonWebToken(usr),
@@ -54,6 +54,48 @@ class UserController {
     }).catch((error) => {
       getErrorMessage(error);
     });
+  }
+
+  authSignIn(req, res) {
+    user.findOne({
+      where: {
+        email: req.body.email,
+      },
+    }).then((usr) => {
+      if (usr) {
+        // User found, sign in and return token
+        const token = signJsonWebToken(usr);
+        return res.status(201).json({
+          id: usr.id,
+          name: usr.name,
+          email: usr.email,
+          message: 'Sign in successful',
+          token,
+        });
+      }
+
+      // If the user doesn't exist, create a new user
+      return user.create({
+        name: req.body.name,
+        email: req.body.email,
+      }).then((createdUser) => {
+        const token = signJsonWebToken(createdUser);
+        res.status(201).json({
+          id: createdUser.id,
+          name: createdUser.name,
+          email: createdUser.email,
+          message: 'User created and signed in successfully',
+          token,
+        });
+      }).catch((error) => {
+        console.log(error);
+        return res.status(400).json({
+          message: 'An error occurred while trying to sign up. Please try again',
+        });
+      });
+    }).catch((error) => res.status(401).json({
+      error: getErrorMessage(error),
+    }))
   }
 }
 

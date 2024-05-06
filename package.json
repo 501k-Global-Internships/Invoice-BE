@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node -r esm index.js",
+    "start": "nodemon -r esm index.js",
     "migrate": "npx sequelize-cli db:migrate",
     "undo-migration": "npx sequelize-cli db:migrate:undo",
+    "undo-migration-all": "npx sequelize-cli db:migrate:undo:all",
     "undo-specific": "npx sequelize-cli db:migrate:undo --name"
   },
   "repository": {
