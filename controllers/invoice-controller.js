@@ -81,10 +81,12 @@ class InvoiceController {
 
   getInvoices(req, res) {
     const { offset, limit, searchKey, status, dateFilter } = req.query;
+    const userId = req.user.id.toString()
     const queryLimit = limit;
     const queryOffset = offset || 0;
     const whereClause = {
       [Op.and]: [
+        { userId },
         searchKey === undefined ? {} : {
           [Op.or]: {
             customerName: { [Op.iLike]: `%${searchKey}%` },
@@ -99,7 +101,7 @@ class InvoiceController {
 
     if (dateFilter) {
       const today = new Date();
-  
+
       switch (dateFilter) {
         case 'last30':
           whereClause.createdAt = {
@@ -117,7 +119,7 @@ class InvoiceController {
           };
           break;
       }
-    }  
+    }
 
     invoice.count({ where: whereClause }).then((count) => {
       invoice.findAll({
@@ -136,6 +138,18 @@ class InvoiceController {
         .catch((error) => {
           getErrorMessage(error);
         });
+    });
+  }
+
+  getInvoiceById(req, res) {
+    invoice.findOne({ where: { id: req.params.id } }).then((nvc) => {
+      if (nvc) {
+        res.status(200).send(nvc);
+      } else {
+        res.status(404).send({
+          message: 'Invoice not found',
+        });
+      }
     });
   }
 

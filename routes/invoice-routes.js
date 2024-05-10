@@ -6,6 +6,7 @@ export default function invoiceRoutes(app) {
   app.post('/create-invoice', verifyAuthToken, validateToken, invoiceConstraints, validateFormData, invoiceController.createInvoice);
   app.post('/draft-invoice', verifyAuthToken, validateToken, invoiceConstraints, validateFormData, invoiceController.draftInvoice);
   app.get('/invoices', verifyAuthToken, validateToken, invoiceController.getInvoices);
+  app.get('/invoice/:id', verifyAuthToken, validateToken, validParamId, validateFormData, invoiceController.getInvoiceById);
   app.put('/edit-invoice/:id', verifyAuthToken, validateToken, validParamId, invoiceConstraints, validateFormData, invoiceController.editInvoice);
   app.delete('/delete-invoice/:id', verifyAuthToken, validateToken, validParamId, validateFormData, invoiceController.deleteInvoice);
   app.get('/download-invoice/:id', verifyAuthToken, validateToken, validParamId, validateFormData, invoiceController.downloadInvoice);
