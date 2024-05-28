@@ -10,7 +10,7 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       userId: {
-        type: Sequelize.STRING,
+        type: Sequelize.INTEGER,
         allowNull: false,
       },
       brandLogo: {
@@ -49,22 +49,6 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      itemDescription: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      quantity: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-      },
-      price: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      amount: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
       additionalInfo: {
         type: Sequelize.TEXT,
         allowNull: true,
@@ -90,12 +74,16 @@ module.exports = {
         allowNull: false,
       },
       discount: {
-        type: Sequelize.STRING,
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false,
       },
       tax: {
-        type: Sequelize.STRING,
-        allowNull: true,
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+      },
+      total: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
       },
       status: {
         type: Sequelize.ENUM('paid', 'unpaid', 'draft', 'overdue'),

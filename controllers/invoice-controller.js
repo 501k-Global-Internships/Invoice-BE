@@ -1,14 +1,60 @@
-import sequelize from 'sequelize';
+import sequelize, { where } from 'sequelize';
 import PDFDocument from 'pdfkit';
 import { getErrorMessage } from '../utils/utils';
 import models from '../models';
 
-const { invoice } = models;
+const { invoice, item } = models;
 
 const { Op } = sequelize;
 
 class InvoiceController {
-  createInvoice(req, res) {
+  createInvoice(req, res, next) {
+    const items = req.body.items;
+    const discount = parseFloat(req.body.discount) || 0;
+    const tax = parseFloat(req.body.tax) || 0;
+
+    const subTotal = items.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+
+    const total = (subTotal - discount) + tax;
+
+    invoice.create({
+      userId: req.user.id,
+      brandLogo: req.body.brandLogo,
+      name: req.body.name,
+      email: req.body.email,
+      customerName: req.body.customerName,
+      billingAddress: req.body.billingAddress,
+      phoneNumber: req.body.phoneNumber,
+      customerEmail: req.body.customerEmail,
+      invoiceTitle: req.body.invoiceTitle,
+      paymentCurrency: req.body.paymentCurrency,
+      additionalInfo: req.body.additionalInfo,
+      accountName: req.body.accountName,
+      accountNumber: req.body.accountNumber,
+      bankName: req.body.bankName,
+      issueDate: req.body.issueDate,
+      dueDate: req.body.dueDate,
+      discount: req.body.discount,
+      tax: req.body.tax,
+      total: total
+    }).then((createdInvoice) => {
+      req.invoice = createdInvoice;
+      req.items = req.body.items;
+
+      return next();
+    }).catch((error) => {
+      getErrorMessage(error);
+    });
+  }
+
+  draftInvoice(req, res, next) {
+    const items = req.body.items;
+    const discount = parseFloat(req.body.discount) || 0;
+    const tax = parseFloat(req.body.tax) || 0;
+
+    const subTotal = items.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+
+    const total = (subTotal - discount) + tax;
     invoice.create(
       {
         userId: req.user.id,
@@ -21,10 +67,6 @@ class InvoiceController {
         customerEmail: req.body.customerEmail,
         invoiceTitle: req.body.invoiceTitle,
         paymentCurrency: req.body.paymentCurrency,
-        itemDescription: req.body.itemDescription,
-        quantity: req.body.quantity,
-        price: req.body.price,
-        amount: req.body.amount,
         additionalInfo: req.body.additionalInfo,
         accountName: req.body.accountName,
         accountNumber: req.body.accountNumber,
@@ -33,50 +75,40 @@ class InvoiceController {
         dueDate: req.body.dueDate,
         discount: req.body.discount,
         tax: req.body.tax,
-      }).then((nvc) => {
-        res.status(201).send({
-          nvc,
-          message: 'Invoice created successfully',
-        })
+        total: total,
+        status: "draft",
+      }).then((createdInvoice) => {
+        req.invoice = createdInvoice;
+        req.items = req.body.items;
+
+        return next();
       }).catch((error) => {
         getErrorMessage(error);
       });
   }
 
-  draftInvoice(req, res) {
-    invoice.create(
-      {
-        userId: req.user.id,
-        brandLogo: req.body.brandLogo,
-        name: req.body.name,
-        email: req.body.email,
-        customerName: req.body.customerName,
-        billingAddress: req.body.billingAddress,
-        phoneNumber: req.body.phoneNumber,
-        customerEmail: req.body.customerEmail,
-        invoiceTitle: req.body.invoiceTitle,
-        paymentCurrency: req.body.paymentCurrency,
-        itemDescription: req.body.itemDescription,
-        quantity: req.body.quantity,
-        price: req.body.price,
-        amount: req.body.amount,
-        additionalInfo: req.body.additionalInfo,
-        accountName: req.body.accountName,
-        accountNumber: req.body.accountNumber,
-        bankName: req.body.bankName,
-        issueDate: req.body.issueDate,
-        dueDate: req.body.dueDate,
-        discount: req.body.discount,
-        tax: req.body.tax,
-        status: "draft",
-      }).then((nvc) => {
-        res.status(201).send({
-          nvc,
-          message: 'Invoice created successfully',
-        })
-      }).catch((error) => {
-        getErrorMessage(error);
+  mapInvoiceToItems(req, res) {
+    const { invoice } = req;
+
+    const newInvoiceItems = req.body.items.map(item => ({
+      userId: req.user.id,
+      invoiceId: invoice.id,
+      itemDescription: item.itemDescription,
+      quantity: item.quantity,
+      price: parseFloat(item.price),
+      amount: parseFloat(item.amount)
+    }));
+
+    item.bulkCreate(newInvoiceItems).then((itemRecords) => {
+      console.log('here');
+      res.status(201).send({
+        message: 'Invoice created successfully',
+        invoice: { ...invoice.dataValues, items: itemRecords },
+        itemsCount: itemRecords.length,
       });
+    }).catch((error) => {
+      res.status(400).send({ message: error.name });
+    });
   }
 
   getInvoices(req, res) {
@@ -90,7 +122,7 @@ class InvoiceController {
         searchKey === undefined ? {} : {
           [Op.or]: {
             customerName: { [Op.iLike]: `%${searchKey}%` },
-            itemDescription: { [Op.iLike]: `%${searchKey}%` },
+            name: { [Op.iLike]: `%${searchKey}%` },
             invoiceTitle: { [Op.iLike]: `%${searchKey}%` },
             billingAddress: { [Op.iLike]: `%${searchKey}%` },
           },
@@ -142,9 +174,14 @@ class InvoiceController {
   }
 
   getInvoiceById(req, res) {
-    invoice.findOne({ where: { id: req.params.id } }).then((nvc) => {
-      if (nvc) {
-        res.status(200).send(nvc);
+    const id = req.params.id
+    invoice.findOne({ where: { id } }).then((invoice) => {
+      if (invoice) {
+        item.findAll({ where: { invoiceId: id } }).then((itemRecords) => {
+          res.status(200).send({
+            ...invoice.dataValues, items: itemRecords,
+          });
+        })
       } else {
         res.status(404).send({
           message: 'Invoice not found',
@@ -217,10 +254,21 @@ class InvoiceController {
     });
   }
 
-  downloadInvoice(req, res) {
-    invoice.findOne({ where: { id: req.params.id } }).then((nvc) => {
-      if (nvc) {
+  downloadInvoice = (req, res) => {
+    invoice.findOne({ where: { id: req.params.id } })
+      .then((nvc) => {
+        if (!nvc) {
+          return res.status(404).send({
+            message: 'Invoice not found',
+          });
+        }
+
         const doc = new PDFDocument();
+
+        // Set response headers
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=invoice_${nvc.id}.pdf`);
+
         doc.pipe(res); // Pipe the PDF to the response
 
         doc.font('Helvetica-Bold')
@@ -232,7 +280,7 @@ class InvoiceController {
         doc.font('Helvetica')
           .fontSize(12)
           .fillColor('black')
-        doc.fontSize(14).text(`Invoice ID: ${nvc.id}`);
+          .fontSize(14).text(`Invoice ID: ${nvc.id}`);
         doc.moveDown();
         doc.fontSize(12).text(`Name: ${nvc.name}`);
         doc.moveDown();
@@ -280,26 +328,25 @@ class InvoiceController {
 
         // End PDF creation
         doc.end();
-      } else {
-        res.status(404).send({
-          message: 'Invoice not found',
+      })
+      .catch((error) => {
+        console.error('Error downloading invoice:', error);
+        res.status(500).send({
+          message: 'Error downloading invoice',
         });
-      }
-    }).catch((error) => {
-      console.error('Error downloading invoice:', error);
-    })
-  }
+      });
+  };
 
   updateInvoiceStatus(req, res) {
     const newInvoice = invoice.update({ status: "paid" },
-      { where: { id: req.params.id, status: "unpaid" }, returning: true, });
+      { where: { id: req.params.id }, returning: true, });
     newInvoice.then((updated) => {
       const updatedInvoice = updated[1][0];
 
       if (updatedInvoice) {
         return res.status(200).send({
           message: 'Invoice status updated to "paid"',
-          meal: updatedInvoice,
+          Invoice: updatedInvoice,
         });
       }
 
@@ -310,7 +357,6 @@ class InvoiceController {
       getErrorMessage(error);
     });
   }
-
 }
 
 export default new InvoiceController();
