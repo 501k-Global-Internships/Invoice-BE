@@ -107,7 +107,7 @@ export const invoiceConstraints = [
     .isString()
     .withMessage('Item description must be a string')
     .trim(),
-    
+
   body('items.*.quantity')
     .exists()
     .withMessage('Item Quantity is required')
