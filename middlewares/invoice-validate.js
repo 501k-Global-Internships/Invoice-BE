@@ -95,56 +95,39 @@ export const invoiceConstraints = [
     .withMessage('the paymentCurrency must be a string')
     .trim(),
 
-  // body('itemDescription')
-  //   .exists()
-  //   .withMessage('itemDescription field is required')
-  //   .bail()
-  //   .isLength({ min: 1 })
-  //   .withMessage('itemDescription field is required')
-  //   .bail()
-  //   .isString()
-  //   .withMessage('the itemDescription must be a string')
-  //   .trim(),
+  body('items')
+    .exists()
+    .withMessage('items field is required')
+    .isArray({ min: 1 })
+    .withMessage('Items must be an array with at least one item'),
 
-  // body('quantity')
-  //   .exists()
-  //   .withMessage('quantity field is required')
-  //   .bail()
-  //   .isLength({ min: 1 })
-  //   .withMessage('quantity field is required')
-  //   .bail()
-  //   .isInt()
-  //   .withMessage('the itemDescription must be an integer')
-  //   .trim(),
+  body('items.*.itemDescription')
+    .exists()
+    .withMessage('Item description is required')
+    .isString()
+    .withMessage('Item description must be a string')
+    .trim(),
+    
+  body('items.*.quantity')
+    .exists()
+    .withMessage('Item Quantity is required')
+    .isInt({ min: 1 })
+    .withMessage('Quantity must be an integer greater than 0'),
 
+  body('items.*.price')
+    .exists()
+    .withMessage('Item Price is required')
+    .isNumeric()
+    .withMessage('Price must be a numeric value'),
 
-  // body('price')
-  //   .exists()
-  //   .withMessage('price field is required')
-  //   .bail()
-  //   .isLength({ min: 1 })
-  //   .withMessage('price field is required')
-  //   .bail()
-  //   .isString()
-  //   .withMessage('the price must be a string')
-  //   .trim(),
-
-  // body('amount')
-  //   .exists()
-  //   .withMessage('amount field is required')
-  //   .bail()
-  //   .isLength({ min: 1 })
-  //   .withMessage('amount field is required')
-  //   .bail()
-  //   .isString()
-  //   .withMessage('the amount must be a string')
-  //   .trim(),
+  body('items.*.amount')
+    .exists()
+    .withMessage('Item Amount is required')
+    .isNumeric()
+    .withMessage('Amount must be a numeric value'),
 
   body('additionalInfo')
-    .optional({ nullable: true })
-    .bail()
-    .isLength({ min: 1 })
-    .withMessage('additionalInfo field is required')
+    .optional({ nullable: true, checkFalsy: true })
     .bail()
     .isString()
     .withMessage('the additionalInfo must be a string')
