@@ -100,7 +100,6 @@ class InvoiceController {
     }));
 
     item.bulkCreate(newInvoiceItems).then((itemRecords) => {
-      console.log('here');
       res.status(201).send({
         message: 'Invoice created successfully',
         invoice: { ...invoice.dataValues, items: itemRecords },
@@ -160,16 +159,22 @@ class InvoiceController {
         limit: queryLimit,
         where: whereClause,
       }).then((invoices) => {
-        res.status(200).send({
-          invoices,
-          count,
-          limit: queryLimit,
-          offset: queryOffset,
+        return Promise.all(invoices.map((inv) => {
+          return item.findAll({ where: { invoiceId: inv.id } })
+            .then((itemRecords) => {
+              return { ...inv.dataValues, items: itemRecords };
+            });
+        })).then((invoicesWithItems) => {
+          res.status(200).send({
+            invoices: invoicesWithItems,
+            count,
+            limit: queryLimit,
+            offset: queryOffset,
+          });
         });
-      })
-        .catch((error) => {
-          getErrorMessage(error);
-        });
+      }).catch((error) => {
+        getErrorMessage(error);
+      });
     });
   }
 
