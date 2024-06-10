@@ -262,79 +262,78 @@ class InvoiceController {
   downloadInvoice = (req, res) => {
     invoice.findOne({ where: { id: req.params.id } })
       .then((nvc) => {
-        if (!nvc) {
-          return res.status(404).send({
+        if (nvc) {
+          item.findAll({ where: { invoiceId: req.params.id } }).then((itemRecords) => {
+            const doc = new PDFDocument();
+
+            // Set response headers
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename=invoice_${nvc.id}.pdf`);
+
+            doc.pipe(res); // Pipe the PDF to the response
+
+            doc.font('Helvetica-Bold')
+              .fontSize(16)
+              .fillColor('blue')
+              .text(nvc.invoiceTitle, { align: 'center' });
+
+            doc.moveDown();
+            doc.font('Helvetica')
+              .fontSize(12)
+              .fillColor('black')
+              .fontSize(14).text(`Invoice ID: ${nvc.id}`);
+            doc.moveDown();
+            doc.fontSize(12).text(`Name: ${nvc.name}`);
+            doc.moveDown();
+            doc.text(`Email: ${nvc.email}`);
+            doc.moveDown();
+            doc.text(`Customer Name: ${nvc.customerName}`);
+            doc.moveDown();
+            doc.text(`Billing Address: ${nvc.billingAddress}`);
+            doc.moveDown();
+            doc.text(`Phone Number: ${nvc.phoneNumber}`);
+            doc.moveDown();
+            doc.text(`Customer Email: ${nvc.customerEmail}`);
+            doc.moveDown();
+            doc.text(`Payment Currency: ${nvc.paymentCurrency}`);
+            doc.moveDown();
+            itemRecords.forEach(item => {
+              doc.text(`Item Description: ${item.itemDescription}, Quantity: ${item.quantity}, Price: ${item.price}, Amount: ${item.amount}`);
+              doc.moveDown();
+            });
+            doc.text(`Discount: $${nvc.discount}`);
+            doc.moveDown();
+            doc.text(`Tax: $${nvc.tax}`);
+            doc.moveDown();
+            doc.text(`Total: $${nvc.total}`);
+            doc.moveDown();
+            doc.text(`Account Name: ${nvc.accountName}`);
+            doc.moveDown();
+            doc.text(`Account Number: ${nvc.accountNumber}`);
+            doc.moveDown();
+            doc.text(`Bank Name: ${nvc.bankName}`);
+            doc.moveDown();
+            doc.text(`Issue Date: ${new Date(nvc.issueDate).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}`);
+            doc.moveDown();
+            doc.text(`Due Date: ${new Date(nvc.dueDate).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}`);
+
+            // End PDF creation
+            doc.end();
+          })
+        } else {
+          res.status(404).send({
             message: 'Invoice not found',
           });
         }
-
-        const doc = new PDFDocument();
-
-        // Set response headers
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=invoice_${nvc.id}.pdf`);
-
-        doc.pipe(res); // Pipe the PDF to the response
-
-        doc.font('Helvetica-Bold')
-          .fontSize(16)
-          .fillColor('blue')
-          .text(nvc.invoiceTitle, { align: 'center' });
-
-        doc.moveDown();
-        doc.font('Helvetica')
-          .fontSize(12)
-          .fillColor('black')
-          .fontSize(14).text(`Invoice ID: ${nvc.id}`);
-        doc.moveDown();
-        doc.fontSize(12).text(`Name: ${nvc.name}`);
-        doc.moveDown();
-        doc.text(`Email: ${nvc.email}`);
-        doc.moveDown();
-        doc.text(`Customer Name: ${nvc.customerName}`);
-        doc.moveDown();
-        doc.text(`Billing Address: ${nvc.billingAddress}`);
-        doc.moveDown();
-        doc.text(`Phone Number: ${nvc.phoneNumber}`);
-        doc.moveDown();
-        doc.text(`Customer Email: ${nvc.customerEmail}`);
-        doc.moveDown();
-        doc.text(`Payment Currency: ${nvc.paymentCurrency}`);
-        doc.moveDown();
-        doc.text(`Item Description: ${nvc.itemDescription}`);
-        doc.moveDown();
-        doc.text(`Quantity: ${nvc.quantity}`);
-        doc.moveDown();
-        doc.text(`Price: $${nvc.price}`);
-        doc.moveDown();
-        doc.text(`Amount: $${nvc.amount}`);
-        doc.moveDown();
-        doc.text(`Discount: $${nvc.discount}`);
-        doc.moveDown();
-        doc.text(`Tax: $${nvc.tax}`);
-        doc.moveDown();
-        doc.text(`Account Name: ${nvc.accountName}`);
-        doc.moveDown();
-        doc.text(`Account Number: ${nvc.accountNumber}`);
-        doc.moveDown();
-        doc.text(`Bank Name: ${nvc.bankName}`);
-        doc.moveDown();
-        doc.text(`Issue Date: ${new Date(nvc.issueDate).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}`);
-        doc.moveDown();
-        doc.text(`Due Date: ${new Date(nvc.dueDate).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}`);
-
-        // End PDF creation
-        doc.end();
-      })
-      .catch((error) => {
+      }).catch((error) => {
         console.error('Error downloading invoice:', error);
         res.status(500).send({
           message: 'Error downloading invoice',
