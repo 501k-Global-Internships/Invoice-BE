@@ -301,11 +301,11 @@ class InvoiceController {
               doc.text(`Item Description: ${item.itemDescription}, Quantity: ${item.quantity}, Price: ${item.price}, Amount: ${item.amount}`);
               doc.moveDown();
             });
-            doc.text(`Discount: $${nvc.discount}`);
+            doc.text(`Discount: ${nvc.discount}`);
             doc.moveDown();
-            doc.text(`Tax: $${nvc.tax}`);
+            doc.text(`Tax: ${nvc.tax}`);
             doc.moveDown();
-            doc.text(`Total: $${nvc.total}`);
+            doc.text(`Total: ${nvc.total}`);
             doc.moveDown();
             doc.text(`Account Name: ${nvc.accountName}`);
             doc.moveDown();
