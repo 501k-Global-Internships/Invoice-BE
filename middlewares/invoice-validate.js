@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 export const invoiceConstraints = [
   body('brandLogo')
     .optional({ nullable: true })
-    .custom((value) => isUrl(value))
+    .isURL()
     .withMessage('image link must be a URL')
     .trim(),
 

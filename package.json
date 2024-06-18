@@ -29,6 +29,7 @@
     "esm": "^3.2.25",
     "express": "^4.19.2",
     "express-validator": "^7.0.1",
+    "https": "^1.0.0",
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^3.0.3",
     "password-hash": "^1.2.2",
