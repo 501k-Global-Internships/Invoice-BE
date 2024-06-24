@@ -3,13 +3,13 @@ import { body } from 'express-validator';
 export const signUpConstraints = [
   body('name')
     .exists()
-    .withMessage('firstName field is required')
+    .withMessage('Full name field is required')
     .bail()
     .isLength({ min: 1 })
-    .withMessage('firstName field is required')
+    .withMessage('Full name field is required')
     .bail()
     .isString()
-    .withMessage('the name must be a string')
+    .withMessage('The Full name must be a string')
     .trim(),
 
   body('email')
