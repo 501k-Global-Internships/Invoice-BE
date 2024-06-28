@@ -90,3 +90,56 @@ export const authSignInConstraints = [
     .withMessage('the name must be a string')
     .trim(),
 ];
+
+export const changePasswordConstraints = [
+  body('currentPassword')
+    .exists()
+    .withMessage('current password field is required')
+    .isLength({ min: 1 })
+    .withMessage('current password field is required'),
+
+  body('newPassword')
+    .exists()
+    .withMessage('new password field is required')
+    .isLength({ min: 1 })
+    .withMessage('new password field is required')
+    .isLength({ min: 8 })
+    .withMessage('new password field must contain at least 8 characters'),
+
+  body('confirmPassword')
+    .exists()
+    .withMessage('confirm password field is required')
+    .isLength({ min: 1 })
+    .withMessage('confirm password field is required')
+    .custom((value, { req }) => value === req.body.newPassword)
+    .withMessage('confirm password field must match new password'),
+];
+
+export const resetPasswordEmail = [
+  body('recipientEmail')
+    .exists()
+    .withMessage('email is required')
+    .isLength({ min: 1 })
+    .withMessage('email is required')
+    .isEmail()
+    .withMessage('email field must contain a valid email address')
+    .trim(),
+];
+
+export const resetPassword = [
+  body('newPassword')
+    .exists()
+    .withMessage('password is required')
+    .isLength({ min: 1 })
+    .withMessage('password is required')
+    .isLength({ min: 8 })
+    .withMessage('password must contain at least 8 characters'),
+
+  body('confirmPassword')
+    .exists()
+    .withMessage('password confirmation is required')
+    .isLength({ min: 1 })
+    .withMessage('password confirmation is required')
+    .custom((value, { req }) => value === req.body.newPassword)
+    .withMessage('password confirmation must match newPassword'),
+];

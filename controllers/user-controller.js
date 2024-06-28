@@ -1,5 +1,6 @@
 import passwordHash from 'password-hash';
-import { getErrorMessage, signJsonWebToken } from '../utils/utils'
+import { v4 as uuidv4 } from 'uuid';
+import { getErrorMessage, signJsonWebToken, resetPasswordEmail } from '../utils/utils';
 import models from '../models';
 
 const { user } = models;
@@ -50,7 +51,7 @@ class UserController {
         });
       }
 
-      res.status(404).send({ message: 'User not found' });
+      res.status(400).send({ message: 'Incorrect password' });
     }).catch((error) => {
       getErrorMessage(error);
     });
@@ -96,6 +97,95 @@ class UserController {
     }).catch((error) => res.status(401).json({
       error: getErrorMessage(error),
     }))
+  }
+
+  changePassword(req, res) {
+    user.findOne({
+      where: {
+        id: req.user.id,
+      },
+    }).then((usr) => {
+      if (passwordHash.verify(req.body.currentPassword, usr.passwordHash)) {
+        if (req.body.currentPassword === req.body.newPassword) {
+          return res.status(400).send({
+            message: "New password can't be the same as current password",
+          });
+        }
+
+        user.update(
+          {
+            passwordHash: passwordHash.generate(req.body.newPassword),
+          },
+          {
+            where: {
+              id: req.user.id,
+            },
+          },
+        ).then((changedPassword) => {
+          if (changedPassword) {
+            return res.status(200).send({
+              message: 'Password changed successfully',
+            });
+          }
+        });
+      } else {
+        return res.status(400).send({
+          message: 'Current password is incorrect',
+        });
+      }
+    });
+  }
+
+  sendRecoveryPasswordId(req, res, next) {
+    const newUuid = uuidv4();
+    user.update({
+      recoveryPasswordId: newUuid
+    },
+      { where: { email: req.body.recipientEmail }, returning: true },
+    ).then((updated) => {
+      req.user = updated[1][0]
+      if (updated) {
+        return next();
+      }
+    });
+  }
+
+  resetPasswordEmail(req, res) {
+    resetPasswordEmail(req, req.body)
+      .then((response) => res.status(200).send(response))
+      .catch((error) => res.status(404).send({ message: error.message }));
+  }
+
+  resetPassword(req, res) {
+    const { recoveryPasswordId } = req.query;
+
+    user.findOne({
+      where: {
+        recoveryPasswordId,
+      },
+    }).then((usr) => {
+      if (usr) {
+        user.update(
+          {
+            passwordHash: passwordHash.generate(req.body.newPassword),
+            recoveryPasswordId: null,
+          },
+          {
+            where: {
+              id: usr.id,
+            },
+          },
+        ).then((updatedPassword) => {
+          if (updatedPassword) {
+            return res.status(200).send({
+              message: 'Your new Password has been created successfully',
+            });
+          }
+        });
+      } else {
+        res.status(404).send({ message: 'Invalid or expired password reset link. Please request a new password reset.' });
+      }
+    });
   }
 }
 

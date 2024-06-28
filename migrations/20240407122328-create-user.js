@@ -22,6 +22,11 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      recoveryPasswordId: {
+        allowNull: true,
+        type: Sequelize.STRING,
+        unique: true,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
