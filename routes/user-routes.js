@@ -11,6 +11,7 @@ export default function userRoutes(app) {
   app.post('/sign-in', signInConstraints, validateFormData, userController.signIn);
   app.post('/auth-sign-in', authSignInConstraints, validateFormData, userController.authSignIn);
   app.put('/change-password', verifyAuthToken, validateToken, changePasswordConstraints, validateFormData, userController.changePassword);
-  app.patch('/reset-password-email', resetPasswordEmail, validateFormData, userController.sendRecoveryPasswordId, userController.resetPasswordEmail);
-  app.put('/reset-password', resetPassword, validateFormData, userController.resetPassword);
+  app.get('/check-password-set', verifyAuthToken, validateToken, userController.checkPasswordSet);
+  app.patch('/reset-password-email', resetPasswordEmail, validateFormData, userController.sendRecoveryPasswordId);
+  app.put('/reset-password', resetPassword, validateFormData, userController.resetPassword, userController.passwordResetEmail);
 }

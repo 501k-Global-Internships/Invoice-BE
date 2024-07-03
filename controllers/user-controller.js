@@ -1,6 +1,10 @@
 import passwordHash from 'password-hash';
 import { v4 as uuidv4 } from 'uuid';
-import { getErrorMessage, signJsonWebToken, resetPasswordEmail } from '../utils/utils';
+import {
+  getErrorMessage, signJsonWebToken,
+  resetPasswordEmail, signInEmail, signUpEmail,
+  changePasswordEmail, passwordResetEmail
+} from '../utils/utils';
 import models from '../models';
 
 const { user } = models;
@@ -19,7 +23,11 @@ class UserController {
           email: usr.email,
           message: 'user created successfully',
           token: signJsonWebToken(usr),
-        })
+        });
+
+        signUpEmail(usr)
+          .then(() => console.log('Sign-up email sent successfully'))
+          .catch((error) => console.error('Error sending sign-up email:', error));
       }).catch((error) => {
         if (error.name === 'SequelizeUniqueConstraintError') {
           return res.status(409).send({
@@ -42,16 +50,20 @@ class UserController {
       }
 
       if (passwordHash.verify(req.body.password, usr.passwordHash)) {
-        return res.status(201).send({
+        res.status(201).send({
           id: usr.id,
           name: usr.name,
           email: usr.email,
           message: 'Sign in successful',
           token: signJsonWebToken(usr),
         });
-      }
 
-      res.status(400).send({ message: 'Incorrect password' });
+        signInEmail(usr)
+          .then(() => console.log('Sign-in email sent successfully'))
+          .catch((error) => console.error('Error sending sign-in email:', error));
+      } else {
+        res.status(400).send({ message: 'Incorrect password' });
+      }
     }).catch((error) => {
       getErrorMessage(error);
     });
@@ -62,41 +74,75 @@ class UserController {
       where: {
         email: req.body.email,
       },
-    }).then((usr) => {
-      if (usr) {
-        // User found, sign in and return token
-        const token = signJsonWebToken(usr);
-        return res.status(201).json({
-          id: usr.id,
-          name: usr.name,
-          email: usr.email,
-          message: 'Sign in successful',
-          token,
-        });
-      }
+    })
+      .then((usr) => {
+        if (usr) {
+          // User found, sign in and return token
+          const token = signJsonWebToken(usr);
+          res.status(201).json({
+            id: usr.id,
+            name: usr.name,
+            email: usr.email,
+            message: 'Sign in successful',
+            token,
+          });
 
-      // If the user doesn't exist, create a new user
-      return user.create({
-        name: req.body.name,
-        email: req.body.email,
-      }).then((createdUser) => {
-        const token = signJsonWebToken(createdUser);
-        res.status(201).json({
-          id: createdUser.id,
-          name: createdUser.name,
-          email: createdUser.email,
-          message: 'User created and signed in successfully',
-          token,
-        });
-      }).catch((error) => {
-        console.log(error);
-        return res.status(400).json({
-          message: 'An error occurred while trying to sign up. Please try again',
+          // Send sign-in email asynchronously
+          signInEmail(usr)
+            .then(() => console.log('Sign-in email sent successfully'))
+            .catch((error) => console.error('Error sending sign-in email:', error));
+        } else {
+          // If the user doesn't exist, create a new user
+          return user.create({
+            name: req.body.name,
+            email: req.body.email,
+          })
+            .then((createdUser) => {
+              const token = signJsonWebToken(createdUser);
+              res.status(201).json({
+                id: createdUser.id,
+                name: createdUser.name,
+                email: createdUser.email,
+                message: 'User created and signed in successfully',
+                token,
+              });
+
+              // Send sign-up email asynchronously
+              signUpEmail(createdUser)
+                .then(() => console.log('Sign-up email sent successfully'))
+                .catch((error) => console.error('Error sending sign-up email:', error));
+            })
+            .catch((error) => {
+              console.error('Error creating user:', error);
+              return res.status(400).json({
+                message: 'An error occurred while trying to sign up. Please try again',
+              });
+            });
+        }
+      })
+      .catch((error) => {
+        console.error('Error finding user:', error);
+        return res.status(401).json({
+          error: getErrorMessage(error),
         });
       });
-    }).catch((error) => res.status(401).json({
-      error: getErrorMessage(error),
-    }))
+  }
+
+  checkPasswordSet(req, res) {
+    user.findOne({
+      where: {
+        id: req.user.id,
+      },
+    }).then((usr) => {
+      if (usr && usr.passwordHash) {
+        return res.status(200).json({ isPasswordSet: true });
+      } else {
+        return res.status(200).json({ isPasswordSet: false });
+      }
+    }).catch((error) => {
+      console.error('Error checking password set:', error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    });
   }
 
   changePassword(req, res) {
@@ -111,7 +157,6 @@ class UserController {
             message: "New password can't be the same as current password",
           });
         }
-
         user.update(
           {
             passwordHash: passwordHash.generate(req.body.newPassword),
@@ -123,9 +168,15 @@ class UserController {
           },
         ).then((changedPassword) => {
           if (changedPassword) {
-            return res.status(200).send({
+
+            res.status(200).send({
               message: 'Password changed successfully',
             });
+
+            changePasswordEmail(usr)
+              .then((response) => res.status(200).send(response))
+              .then(() => console.log('Change password email sent successfully'))
+              .catch((error) => console.error('Error sending Change password email:', error));
           }
         });
       } else {
@@ -136,24 +187,25 @@ class UserController {
     });
   }
 
-  sendRecoveryPasswordId(req, res, next) {
+  sendRecoveryPasswordId(req, res) {
     const newUuid = uuidv4();
     user.update({
       recoveryPasswordId: newUuid
     },
       { where: { email: req.body.recipientEmail }, returning: true },
     ).then((updated) => {
-      req.user = updated[1][0]
-      if (updated) {
-        return next();
+      const user = updated[1][0]
+      if (user) {
+        passwordResetEmail(user)
+          .then(() => {
+            res.status(201).send({
+              message: 'Reset password email sent successfully',
+            });
+          }).catch((error) => console.error('Error sending reset password email:', error));
+
+        return;
       }
     });
-  }
-
-  resetPasswordEmail(req, res) {
-    resetPasswordEmail(req, req.body)
-      .then((response) => res.status(200).send(response))
-      .catch((error) => res.status(404).send({ message: error.message }));
   }
 
   resetPassword(req, res) {
@@ -177,9 +229,13 @@ class UserController {
           },
         ).then((updatedPassword) => {
           if (updatedPassword) {
-            return res.status(200).send({
+            res.status(200).send({
               message: 'Your new Password has been created successfully',
             });
+
+            resetPasswordEmail(usr)
+              .then(() => console.log('Password reset success email sent successfully'))
+              .catch((error) => console.error('Error sending password reset success email:', error))
           }
         });
       } else {
