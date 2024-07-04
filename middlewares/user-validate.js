@@ -126,7 +126,7 @@ export const resetPasswordEmail = [
     .trim(),
 ];
 
-export const resetPassword = [
+export const resetPasswordConstraints = [
   body('newPassword')
     .exists()
     .withMessage('password is required')

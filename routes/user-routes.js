@@ -2,7 +2,7 @@ import userController from "../controllers/user-controller";
 import {
   signUpConstraints, signInConstraints,
   authSignInConstraints, changePasswordConstraints,
-  resetPasswordEmail, resetPassword
+  resetPasswordEmail, resetPasswordConstraints
 } from "../middlewares/user-validate";
 import { validateFormData, verifyAuthToken, validateToken } from "../middlewares/validate";
 
@@ -13,5 +13,5 @@ export default function userRoutes(app) {
   app.put('/change-password', verifyAuthToken, validateToken, changePasswordConstraints, validateFormData, userController.changePassword);
   app.get('/check-password-set', verifyAuthToken, validateToken, userController.checkPasswordSet);
   app.patch('/reset-password-email', resetPasswordEmail, validateFormData, userController.sendRecoveryPasswordId);
-  app.put('/reset-password', resetPassword, validateFormData, userController.resetPassword, userController.passwordResetEmail);
+  app.put('/reset-password', resetPasswordConstraints, validateFormData, userController.resetPassword, userController.passwordResetEmail);
 }
